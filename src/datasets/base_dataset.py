@@ -3,7 +3,9 @@ import random
 from typing import List
 
 import torch
+import torchaudio
 from torch.utils.data import Dataset
+from src.utils import MelSpectrogram
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +36,7 @@ class BaseDataset(Dataset):
                 tensor name.
         """
         self._assert_index_is_valid(index)
+        self.make_mel = MelSpectrogram()
 
         index = self._shuffle_and_limit_index(index, limit, shuffle_index)
         self._index: List[dict] = index
@@ -56,11 +59,9 @@ class BaseDataset(Dataset):
                 (a single dataset element).
         """
         data_dict = self._index[ind]
-        data_path = data_dict["path"]
-        data_object = self.load_object(data_path)
-        data_label = data_dict["label"]
-
-        instance_data = {"data_object": data_object, "labels": data_label}
+        audio = self.load_audio(data_dict['audio_path']).squeeze()
+        mel = self.make_mel(audio)
+        instance_data = {"audio": audio, "mel": mel}
         instance_data = self.preprocess_data(instance_data)
 
         return instance_data
@@ -71,7 +72,7 @@ class BaseDataset(Dataset):
         """
         return len(self._index)
 
-    def load_object(self, path):
+    def load_audio(self, path):
         """
         Load object from disk.
 
@@ -80,8 +81,12 @@ class BaseDataset(Dataset):
         Returns:
             data_object (Tensor):
         """
-        data_object = torch.load(path)
-        return data_object
+        audio_tensor, sr = torchaudio.load(path)
+        audio_tensor = audio_tensor[0:1, :]  # remove all channels but the first
+        target_sr = self.target_sr
+        if sr != target_sr:
+            audio_tensor = torchaudio.functional.resample(audio_tensor, sr, target_sr)
+        return audio_tensor
 
     def preprocess_data(self, instance_data):
         """

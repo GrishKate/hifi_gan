@@ -16,7 +16,7 @@ class Inferencer(BaseTrainer):
 
     def __init__(
         self,
-        model,
+        generator,
         config,
         device,
         dataloaders,
@@ -56,7 +56,7 @@ class Inferencer(BaseTrainer):
 
         self.device = device
 
-        self.model = model
+        self.generator = generator
         self.batch_transforms = batch_transforms
 
         # define dataloaders
@@ -119,7 +119,7 @@ class Inferencer(BaseTrainer):
         batch = self.move_batch_to_device(batch)
         batch = self.transform_batch(batch)  # transform batch on device -- faster
 
-        outputs = self.model(**batch)
+        outputs = self.generator(**batch)
         batch.update(outputs)
 
         if metrics is not None:
@@ -164,7 +164,7 @@ class Inferencer(BaseTrainer):
         """
 
         self.is_train = False
-        self.model.eval()
+        self.generator.eval()
 
         self.evaluation_metrics.reset()
 

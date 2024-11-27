@@ -34,7 +34,7 @@ def main(config):
     dataloaders, batch_transforms = get_dataloaders(config, device)
 
     # build model architecture, then print to console
-    model = instantiate(config.model).to(device)
+    model = instantiate(config.generator).to(device)
     print(model)
 
     # get metrics
@@ -45,7 +45,7 @@ def main(config):
     save_path.mkdir(exist_ok=True, parents=True)
 
     inferencer = Inferencer(
-        model=model,
+        generator=model,
         config=config,
         device=device,
         dataloaders=dataloaders,
