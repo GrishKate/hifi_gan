@@ -40,11 +40,8 @@ def main(config):
 
     # build model architecture, then print to console
     generator = instantiate(config.generator).to(device)
-    logger.info(generator)
     msd = instantiate(config.msd).to(device)
-    logger.info(msd)
     mpd = instantiate(config.mpd).to(device)
-    logger.info(mpd)
 
     # get function handles of loss and metrics
     gen_loss = instantiate(config.gen_loss).to(device)
@@ -53,10 +50,10 @@ def main(config):
 
     # build optimizer, learning rate scheduler
     trainable_params = filter(lambda p: p.requires_grad, generator.parameters())
-    gen_optimizer = instantiate(config.gen_optimizer, params=trainable_params)
+    gen_optimizer = instantiate(config.gen_optimizer, params=trainable_params, betas=(0.8, 0.99))
     gen_lr_scheduler = instantiate(config.gen_lr_scheduler, optimizer=gen_optimizer)
     trainable_params = filter(lambda p: p.requires_grad, (itertools.chain(msd.parameters(), mpd.parameters())))
-    disc_optimizer = instantiate(config.disc_optimizer, params=trainable_params)
+    disc_optimizer = instantiate(config.disc_optimizer, params=trainable_params, betas=(0.8, 0.99))
     disc_lr_scheduler = instantiate(config.disc_lr_scheduler, optimizer=disc_optimizer)
 
     # epoch_len = number of iterations for iteration-based training

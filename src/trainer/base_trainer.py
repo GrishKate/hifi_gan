@@ -8,7 +8,7 @@ from tqdm.auto import tqdm
 from src.datasets.data_utils import inf_loop
 from src.metrics.tracker import MetricTracker
 from src.utils.io_utils import ROOT_PATH
-from src.utils import MelSpectrogram
+from src.utils import MelSpectrogram, MelSpectrogramConfig
 
 
 class BaseTrainer:
@@ -82,7 +82,8 @@ class BaseTrainer:
         self.disc_optimizer = disc_optimizer
         self.disc_lr_scheduler = disc_lr_scheduler
         self.batch_transforms = batch_transforms
-        self.make_mel = MelSpectrogram()
+        conf = MelSpectrogramConfig()
+        self.make_mel = MelSpectrogram(conf).to(self.device)
 
         # define dataloaders
         self.train_dataloader = dataloaders["train"]
@@ -177,6 +178,10 @@ class BaseTrainer:
         for epoch in range(self.start_epoch, self.epochs + 1):
             self._last_epoch = epoch
             result = self._train_epoch(epoch)
+            if self.gen_lr_scheduler is not None:
+                self.gen_lr_scheduler.step()
+            if self.disc_lr_scheduler is not None:
+                self.disc_lr_scheduler.step()
 
             # save logged information into logs dict
             logs = {"epoch": epoch}
@@ -238,12 +243,15 @@ class BaseTrainer:
             if batch_idx % self.log_step == 0:
                 self.writer.set_step((epoch - 1) * self.epoch_len + batch_idx)
                 self.logger.debug(
-                    "Train Epoch: {} {} Loss: {:.6f}".format(
-                        epoch, self._progress(batch_idx), batch["loss"].item()
+                    "Train Epoch: {} {} GenLoss: {:.6f} DiscLoss: {:.6f}".format(
+                        epoch, self._progress(batch_idx), batch["gen_loss"].item(), batch["disc_loss"].item()
                     )
                 )
                 self.writer.add_scalar(
-                    "learning rate", self.lr_scheduler.get_last_lr()[0]
+                    "gen learning rate", self.gen_lr_scheduler.get_last_lr()[0]
+                )
+                self.writer.add_scalar(
+                    "disc learning rate", self.disc_lr_scheduler.get_last_lr()[0]
                 )
                 self._log_scalars(self.train_metrics)
                 self._log_batch(batch_idx, batch)

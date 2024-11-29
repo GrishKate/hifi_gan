@@ -19,7 +19,7 @@ class ResBlock(nn.Module):
         self.layers.apply(init)
 
     def forward(self, x):
-        for i in range(self.layers):
+        for i in range(len(self.layers)):
             x = x + self.layers[i](x)
         return x
 
@@ -37,12 +37,12 @@ class GenBlock(nn.Module):
         self.mrf_blocks.apply(init)
 
     def forward(self, x):
-        x = F.leaky_relu(x, 0.1)
+        x = self.conv_tr(F.leaky_relu(x, 0.1))
         s = 0.0
-        for i in range(self.mrf_blocks):
+        for i in range(len(self.mrf_blocks)):
             s += self.mrf_blocks[i](x)
         s = s / len(self.mrf_blocks)
-        return self.conv_tr(s)
+        return s
 
 
 class Generator(nn.Module):

@@ -5,7 +5,8 @@ from typing import List
 import torch
 import torchaudio
 from torch.utils.data import Dataset
-from src.utils import MelSpectrogram
+from src.utils import MelSpectrogram, MelSpectrogramConfig
+import random
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +21,7 @@ class BaseDataset(Dataset):
     """
 
     def __init__(
-        self, index, limit=None, shuffle_index=False, instance_transforms=None
+        self, index, limit=None, shuffle_index=False, instance_transforms=None, audio_size=8192
     ):
         """
         Args:
@@ -36,7 +37,9 @@ class BaseDataset(Dataset):
                 tensor name.
         """
         self._assert_index_is_valid(index)
-        self.make_mel = MelSpectrogram()
+        config = MelSpectrogramConfig()
+        self.make_mel = MelSpectrogram(config)
+        self.audio_size = audio_size
 
         index = self._shuffle_and_limit_index(index, limit, shuffle_index)
         self._index: List[dict] = index
@@ -59,7 +62,13 @@ class BaseDataset(Dataset):
                 (a single dataset element).
         """
         data_dict = self._index[ind]
-        audio = self.load_audio(data_dict['audio_path']).squeeze()
+        audio = self.load_audio(data_dict['path']).squeeze()
+        if audio.shape[0] > self.audio_size:
+            max_start = audio.shape[0] - self.audio_size
+            start = random.randint(0, max_start)
+            audio = audio[start:start+self.audio_size]
+        else:
+            audio = F.pad(audio, (0, self.audio_size - audio.shape[0]))
         mel = self.make_mel(audio)
         instance_data = {"audio": audio, "mel": mel}
         instance_data = self.preprocess_data(instance_data)
@@ -83,7 +92,7 @@ class BaseDataset(Dataset):
         """
         audio_tensor, sr = torchaudio.load(path)
         audio_tensor = audio_tensor[0:1, :]  # remove all channels but the first
-        target_sr = self.target_sr
+        target_sr = 22050
         if sr != target_sr:
             audio_tensor = torchaudio.functional.resample(audio_tensor, sr, target_sr)
         return audio_tensor
@@ -146,10 +155,6 @@ class BaseDataset(Dataset):
         for entry in index:
             assert "path" in entry, (
                 "Each dataset item should include field 'path'" " - path to audio file."
-            )
-            assert "label" in entry, (
-                "Each dataset item should include field 'label'"
-                " - object ground-truth label."
             )
 
     @staticmethod

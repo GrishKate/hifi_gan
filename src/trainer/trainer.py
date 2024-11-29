@@ -50,8 +50,6 @@ class Trainer(BaseTrainer):
             batch["disc_loss"].backward()
             self._clip_grad_norm()
             self.disc_optimizer.step()
-            if self.disc_lr_scheduler is not None:
-                self.disc_lr_scheduler.step()
 
         outputs = self.mpd(**batch, detach=False)
         batch.update(outputs)
@@ -64,8 +62,6 @@ class Trainer(BaseTrainer):
             batch["gen_loss"].backward()
             self._clip_grad_norm()
             self.gen_optimizer.step()
-            if self.gen_lr_scheduler is not None:
-                self.gen_lr_scheduler.step()
 
         # update metrics for each loss (in case of multiple losses)
         for loss_name in self.config.writer.loss_names:
@@ -91,9 +87,11 @@ class Trainer(BaseTrainer):
         # such as audio, text or images, for example
 
         # logging scheme might be different for different partitions
-        if mode == "train":  # the method is called only every self.log_step steps
-            # Log Stuff
-            pass
-        else:
-            # Log Stuff
-            pass
+        # if mode == "train":  # the method is called only every self.log_step steps
+        self.writer.add_audio("fake_audio", batch['fake'][0], 22050)
+        self.writer.add_audio("real_audio", batch['real'][0], 22050)
+        self.writer.add_image("fake_mel", batch['fake_mel'][0].T)
+        self.writer.add_image("real_mel", batch['real_mel'][0].T)
+        # else:
+        # Log Stuff
+        #    pass

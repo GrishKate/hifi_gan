@@ -14,9 +14,9 @@ class Block(nn.Module):
         s = [1, 2, 2, 4, 4, 1, 1]
         g = [1, 4] + [16] * 4 + [1]
         p = [7] + [20] * 5 + [2]
-        for i in range(4):
-            self.layers.append(norm(weight_norm(nn.Conv1d(res[i], res[i + 1], k[i], s[i],
-                                                          groups=g[i], padding=p[i]))))
+        for i in range(7):
+            self.layers.append(norm(nn.Conv1d(res[i], res[i + 1], k[i], s[i],
+                                            groups=g[i], padding=p[i])))
         self.last_conv = norm(nn.Conv1d(1024, 1, 3, 1, padding=1))
 
     def forward(self, x):

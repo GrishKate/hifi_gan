@@ -1,1 +1,1 @@
-from src.utils.mel import MelSpectrogram
+from src.utils.mel import MelSpectrogram, MelSpectrogramConfig

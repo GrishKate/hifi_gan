@@ -13,7 +13,7 @@ class MelSpectrogramConfig:
     sr: int = 22050
     win_length: int = 1024
     hop_length: int = 256
-    n_fft: int = 1024
+    n_fft: int = 1025
     f_min: int = 0
     f_max: int = 8000
     n_mels: int = 80
@@ -59,7 +59,6 @@ class MelSpectrogram(nn.Module):
         :param audio: Expected shape is [B, T]
         :return: Shape is [B, n_mels, T']
         """
-
         mel = self.mel_spectrogram(audio) \
             .clamp_(min=1e-5) \
             .log_()
