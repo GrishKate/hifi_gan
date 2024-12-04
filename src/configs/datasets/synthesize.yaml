@@ -1,0 +1,5 @@
+test:
+  _target_: src.datasets.CustomDirDataset
+  data_dir: "/kaggle/working" # path to transcriptions
+  resynthesize: False # if True mels are generated from audios, if False mels are generated from transcriptions
+  audio_dir: "/kaggle/input/the-lj-speech-dataset/LJSpeech-1.1/wavs" # path to original audios

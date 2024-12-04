@@ -1,6 +1,3 @@
-import json
-import os
-import shutil
 from pathlib import Path
 import pandas as pd
 
@@ -8,8 +5,8 @@ from src.datasets.base_dataset import BaseDataset
 from src.utils.io_utils import ROOT_PATH
 
 PARTS = {
-    "train": lambda x: x <= 10480,
-    "test": lambda x: x > 10480
+    "train": lambda x: x <= 11790,
+    "test": lambda x: x > 11790
 }
 
 

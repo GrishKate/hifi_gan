@@ -1,0 +1,14 @@
+defaults:
+  - generator: baseline
+  - datasets: synthesize
+  - dataloader: example
+  - transforms: example
+  - writer: wandb
+  - _self_
+inferencer:
+  device_tensors: ["real_mel"] # which tensors should be on device (ex. GPU)
+  device: auto # device name or "auto"
+  save_path: "result" # where to save generated audios
+  seed: 1
+  from_pretrained: "/kaggle/input/hifigan/checkpoint-epoch63.pth" # path to the pretrained model
+  log: True # if you want to save results to wandb

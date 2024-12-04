@@ -4,7 +4,7 @@ from torch.nn.utils import weight_norm
 
 
 class ResBlock(nn.Module):
-    def __init__(self, ch, kernel_size, dil=[1, 3, 5]):
+    def __init__(self, ch, kernel_size, dil=(1, 3, 5)):
         super().__init__()
         self.layers = nn.ModuleList()
         for i in range(3):
@@ -24,15 +24,33 @@ class ResBlock(nn.Module):
         return x
 
 
-class GenBlock(nn.Module):
-    def __init__(self, in_ch, out_ch, kernel_size, stride, res_k, res_dil):
+class ResBlockSmall(nn.Module):
+    def __init__(self, ch, kernel_size=3, dil=(1, 3)):
         super().__init__()
+        self.layers = nn.ModuleList()
+        for i in range(2):
+            self.layers.append(nn.Sequential(nn.LeakyReLU(0.1),
+                                             weight_norm(nn.Conv1d(ch, ch, kernel_size, 1, dilation=dil[i],
+                                                                   padding=int((kernel_size * dil[i] - dil[i]) / 2)))))
+
+        self.layers.apply(init)
+
+    def forward(self, x):
+        for i in range(len(self.layers)):
+            x = x + self.layers[i](x)
+        return x
+
+
+class GenBlock(nn.Module):
+    def __init__(self, blk_type, in_ch, out_ch, kernel_size, stride, res_k, res_dil):
+        super().__init__()
+        blk = ResBlockSmall if blk_type == 'small' else ResBlock
         self.conv_tr = weight_norm(nn.ConvTranspose1d(in_ch, out_ch, kernel_size=kernel_size,
                                                       stride=stride,
                                                       padding=(kernel_size - stride) // 2))
         self.mrf_blocks = nn.ModuleList()
         for k, d in zip(res_k, res_dil):
-            self.mrf_blocks.append(ResBlock(out_ch, k, d))
+            self.mrf_blocks.append(blk(out_ch, k, d))
         self.conv_tr.apply(init)
         self.mrf_blocks.apply(init)
 
@@ -46,13 +64,13 @@ class GenBlock(nn.Module):
 
 
 class Generator(nn.Module):
-    def __init__(self, inp_ch, out_ch, kernel_sizes, strides, res_k, res_dil):
+    def __init__(self, blk_type, inp_ch, out_ch, kernel_sizes, strides, res_k, res_dil):
         super().__init__()
         self.conv_start = weight_norm(nn.Conv1d(inp_ch, out_ch, 7, 1, padding=3))
         lst = []
         num_blocks = len(kernel_sizes)
         for i in range(num_blocks):
-            lst.append(GenBlock(in_ch=out_ch // (2 ** i), out_ch=out_ch // (2 ** (1 + i)),
+            lst.append(GenBlock(blk_type, in_ch=out_ch // (2 ** i), out_ch=out_ch // (2 ** (1 + i)),
                                 kernel_size=kernel_sizes[i], stride=strides[i], res_k=res_k,
                                 res_dil=res_dil))
         self.gen_blocks = nn.Sequential(*lst)
